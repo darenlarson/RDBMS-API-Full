@@ -91,6 +91,33 @@ server.delete('/api/lambda/cohorts/:id', (req,res) => {
 
 
 // student routes
+server.get('/api/lambda/students', (req, res) => {
+    db('students')
+        .then(students => {
+            res.status(200).json(students);
+        })
+        .catch(err => {
+            res.status(500).json(err);
+        });
+});
+
+server.get('/api/lambda/students/:id', (req, res) => {
+    const studentId = req.params.id;
+
+    db('students')
+        .where({ id: studentId })
+        .then(student => {
+            if (student.length) {
+                res.status(200).json(student);
+            } else {
+                res.status(404).json({ message: "The student ID is not valid." });
+            };
+        })
+        .catch(err => {
+            res.status(500).json(err);
+        });
+});
+
 server.get('/api/lambda/cohorts/:id/students', (req, res) => {
     const cohortId = req.params.id;
 
@@ -108,16 +135,61 @@ server.get('/api/lambda/cohorts/:id/students', (req, res) => {
         });
 });
 
-server.get('/api/lambda/students', (req, res) => {
+server.post('/api/lambda/students', (req, res) => {
+    const newStudent = req.body;
+
     db('students')
-        .then(students => {
-            res.status(200).json(students);
+        .insert(newStudent)
+        .then(count => {
+            res.status(201).json(count);
+        })
+        .catch(err => {
+            if (!newStudent.name || !newStudent.cohort_id) {
+                res.status(400).json({ message: "Error: A valid name and cohort ID must be provided." });
+            } else {
+                res.status(500).json(err);
+            };
+        });
+});
+
+server.put('/api/lambda/students/:id', (req, res) => {
+    const updatedStudentId = req.params.id;
+    const changes = req.body;
+
+    db('students')
+        .where({ id: updatedStudentId })
+        .update(changes)
+        .then(count => {
+            if (count) {
+                res.status(200).json(count);
+            } else {
+                res.status(404).json({ message: "The studnet ID is not valid." });
+            };
+        })
+        .catch(err => {
+            if (!changes.name || !changes.cohort_id) {
+                res.status(400).json({ message: "A valid name and cohort ID must be provided." });
+            } else {
+                res.status(500).json(err);
+            };
+        });
+});
+
+server.delete('/api/lambda/students/:id', (req,res) => {
+    db('students')
+        .where({ id: req.params.id })
+        .del()
+        .then(count => {
+            if(count) {
+                res.status(200).json(count);
+            } else {
+                res.status(404).json({ message: "The student ID is not valid." });
+            };
         })
         .catch(err => {
             res.status(500).json(err);
         });
 });
-
 
 
 let port = 5000;
